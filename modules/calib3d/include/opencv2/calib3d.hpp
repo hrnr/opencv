@@ -1567,12 +1567,12 @@ CV_EXPORTS_W int estimateAffine2D(InputArray src, InputArray dst,
                                   OutputArray out, OutputArray inliers,
                                   double ransacThreshold = 3, double confidence = 0.99);
 
-/** @brief Computes an optimal limited affine transformation with 5 degrees of freedom between
+/** @brief Computes an optimal limited affine transformation with 4 degrees of freedom between
 two 2D point sets.
 
 @param src First input 2D point set.
 @param dst Second input 2D point set.
-@param out Output 2D affine transformation (5 degrees of freedom) matrix \f$2 \times 3\f$ .
+@param out Output 2D affine transformation (4 degrees of freedom) matrix \f$2 \times 3\f$ .
 @param inliers Output vector indicating which points are inliers.
 @param ransacThreshold Maximum reprojection error in the RANSAC algorithm to consider a point as
 an inlier.
@@ -1580,7 +1580,7 @@ an inlier.
 between 0.95 and 0.99 is usually good enough. Values too close to 1 can slow down the estimation
 significantly. Values lower than 0.8-0.9 can result in an incorrectly estimated transformation.
 
-The function estimates an optimal 2D affine transformation with 5 degrees of freedom limited to
+The function estimates an optimal 2D affine transformation with 4 degrees of freedom limited to
 combinations of translation, rotation, and uniform scaling. Uses the RANSAC algorithm for robust
 estimation.
 
