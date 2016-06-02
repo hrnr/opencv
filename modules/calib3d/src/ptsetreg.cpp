@@ -512,30 +512,41 @@ public:
 
         // we need 3 points to estimate affine transform
         const int N = 6;
-        double buf[N*N + N + N];
+        double buf[N*N + N + N] = {0.};
         Mat A(N, N, CV_64F, &buf[0]);
         Mat B(N, 1, CV_64F, &buf[0] + N*N);
         Mat X(N, 1, CV_64F, &buf[0] + N*N + N);
         double* Adata = A.ptr<double>();
         double* Bdata = B.ptr<double>();
-        A = Scalar::all(0);
 
         for( int i = 0; i < (N/2); i++ )
         {
-            Bdata[i*2] = to[i].x;
-            Bdata[i*2+1] = to[i].y;
+            Adata[N*0+0] += from[i].x*from[i].x;
+            Adata[N*0+1] += from[i].y*from[i].x;
+            Adata[N*0+2] += from[i].x;
 
-            double *aptr = Adata + i*2*N;
-            for(int k = 0; k < 2; ++k)
-            {
-                aptr[0] = from[i].x;
-                aptr[1] = from[i].y;
-                aptr[2] = 1.0;
-                aptr += N+3;
-            }
+            Adata[N*1+1] += from[i].y*from[i].y;
+            Adata[N*1+2] += from[i].y;
+
+            Adata[N*2+2] += 1;
+
+            Bdata[0] += from[i].x*to[i].x;
+            Bdata[1] += from[i].y*to[i].x;
+            Bdata[2] += to[i].x;
+            Bdata[3] += from[i].x*to[i].y;
+            Bdata[4] += from[i].y*to[i].y;
+            Bdata[5] += to[i].y;
         }
 
-        solve(A, B, X, DECOMP_SVD);
+        Adata[N*3+4] = Adata[N*4+3] = Adata[N*1+0] = Adata[N*0+1];
+        Adata[N*3+5] = Adata[N*5+3] = Adata[N*2+0] = Adata[N*0+2];
+        Adata[N*4+5] = Adata[N*5+4] = Adata[N*2+1] = Adata[N*1+2];
+
+        Adata[N*3+3] = Adata[N*0+0];
+        Adata[N*4+4] = Adata[N*1+1];
+        Adata[N*5+5] = Adata[N*2+2];
+
+        solve(A, B, X, DECOMP_EIG);
         X.reshape(1, 2).copyTo(_model);
         return 1;
     }
