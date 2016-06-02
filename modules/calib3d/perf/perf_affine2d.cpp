@@ -89,7 +89,7 @@ static Mat rngPartialAffMat() {
     return Mat(2, 3, CV_64F, aff).clone();
 }
 
-PERF_TEST_P( EstimateAffine, EstimateAffine2D, Combine(Values(5000, 1000, 100), Values(0.99, 0.95, 0.9)) )
+PERF_TEST_P( EstimateAffine, EstimateAffine2D, Combine(Values(100000, 5000, 100), Values(0.99, 0.95, 0.9)) )
 {
     AffineParams params = GetParam();
     const int n = get<0>(params);
@@ -113,7 +113,11 @@ PERF_TEST_P( EstimateAffine, EstimateAffine2D, Combine(Values(5000, 1000, 100), 
     std::transform(tpts.ptr<Point2f>() + m, tpts.ptr<Point2f>() + n, tpts.ptr<Point2f>() + m, bind2nd(std::plus<Point2f>(), shift_outl));
     std::transform(tpts.ptr<Point2f>() + m, tpts.ptr<Point2f>() + n, tpts.ptr<Point2f>() + m, Noise(noise_level));
 
-    Mat aff_est;
+    Mat aff_est(2, 3, CV_64F);
+
+    warmup(aff_est, WARMUP_WRITE);
+    warmup(fpts, WARMUP_READ);
+    warmup(tpts, WARMUP_READ);
 
     TEST_CYCLE()
     {
@@ -123,7 +127,7 @@ PERF_TEST_P( EstimateAffine, EstimateAffine2D, Combine(Values(5000, 1000, 100), 
     SANITY_CHECK(aff_est, .01, ERROR_RELATIVE);
 }
 
-PERF_TEST_P( EstimateAffine, EstimateAffinePartial2D, Combine(Values(5000, 1000, 100), Values(0.99, 0.95, 0.9)) )
+PERF_TEST_P( EstimateAffine, EstimateAffinePartial2D, Combine(Values(100000, 5000, 100), Values(0.99, 0.95, 0.9)) )
 {
     AffineParams params = GetParam();
     const int n = get<0>(params);
@@ -146,7 +150,11 @@ PERF_TEST_P( EstimateAffine, EstimateAffinePartial2D, Combine(Values(5000, 1000,
     std::transform(tpts.ptr<Point2f>() + m, tpts.ptr<Point2f>() + n, tpts.ptr<Point2f>() + m, bind2nd(std::plus<Point2f>(), shift_outl));
     std::transform(tpts.ptr<Point2f>() + m, tpts.ptr<Point2f>() + n, tpts.ptr<Point2f>() + m, Noise(noise_level));
 
-    Mat aff_est;
+    Mat aff_est(2, 3, CV_64F);
+
+    warmup(aff_est, WARMUP_WRITE);
+    warmup(fpts, WARMUP_READ);
+    warmup(tpts, WARMUP_READ);
 
     TEST_CYCLE()
     {
