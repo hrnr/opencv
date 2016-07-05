@@ -805,7 +805,7 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
         estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
 
     if (matches_info.H.empty()) {
-        // could not find trasformation
+        // could not find transformation
         matches_info.confidence = 0;
         matches_info.num_inliers = 0;
         return;
@@ -865,6 +865,10 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
         estimateAffine2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
     else
         estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
+
+    // extend H to represent linear tranformation in homogeneous coordinates
+    matches_info.H.push_back(cv::Mat::zeros(1, 3, CV_64F));
+    matches_info.H.at<double>(2, 2) = 1;
 }
 
 
