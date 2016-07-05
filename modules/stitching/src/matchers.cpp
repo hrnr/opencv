@@ -799,7 +799,7 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
     }
 
     // Find pair-wise motion
-    //estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
+    estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
 
     if (matches_info.H.empty()) {
         // could not find trasformation
@@ -858,7 +858,7 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
     }
 
     // Rerun motion estimation on inliers only
-    //estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
+    estimateAffinePartial2D(src_points, dst_points, matches_info.H, matches_info.inliers_mask);
 }
 
 
