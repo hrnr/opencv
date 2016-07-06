@@ -780,22 +780,13 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
         return;
 
     // Construct point-point correspondences for transform estimation
-    // Points are centered s.t. image center is (0,0) - do we need this?
     cv::Mat src_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
     cv::Mat dst_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
     for (size_t i = 0; i < matches_info.matches.size(); ++i)
     {
         const cv::DMatch &m = matches_info.matches[i];
-
-        cv::Point2f p = features1.keypoints[static_cast<size_t>(m.queryIdx)].pt;
-        p.x -= features1.img_size.width * 0.5f;
-        p.y -= features1.img_size.height * 0.5f;
-        src_points.at<cv::Point2f>(0, static_cast<int>(i)) = p;
-
-        p = features2.keypoints[static_cast<size_t>(m.trainIdx)].pt;
-        p.x -= features2.img_size.width * 0.5f;
-        p.y -= features2.img_size.height * 0.5f;
-        dst_points.at<cv::Point2f>(0, static_cast<int>(i)) = p;
+        src_points.at<Point2f>(0, static_cast<int>(i)) = features1.keypoints[m.queryIdx].pt;
+        dst_points.at<Point2f>(0, static_cast<int>(i)) = features2.keypoints[m.trainIdx].pt;
     }
 
     // Find pair-wise motion
@@ -820,7 +811,7 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
     // These coeffs are from paper M. Brown and D. Lowe. "Automatic Panoramic
     // Image Stitching using Invariant Features"
     matches_info.confidence =
-      matches_info.num_inliers / (8 + 0.3 * matches_info.matches.size());
+        matches_info.num_inliers / (8 + 0.3 * matches_info.matches.size());
 
     /* should we remove matches between too close images? */
     // matches_info.confidence = matches_info.confidence > 3. ? 0. : matches_info.confidence;
@@ -838,16 +829,8 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
                 continue;
 
             const DMatch& m = matches_info.matches[i];
-
-            Point2f p = features1.keypoints[m.queryIdx].pt;
-            p.x -= features1.img_size.width * 0.5f;
-            p.y -= features1.img_size.height * 0.5f;
-            src_points.at<Point2f>(0, inlier_idx) = p;
-
-            p = features2.keypoints[m.trainIdx].pt;
-            p.x -= features2.img_size.width * 0.5f;
-            p.y -= features2.img_size.height * 0.5f;
-            dst_points.at<Point2f>(0, inlier_idx) = p;
+            src_points.at<Point2f>(0, inlier_idx) = features1.keypoints[m.queryIdx].pt;
+            dst_points.at<Point2f>(0, inlier_idx) = features2.keypoints[m.trainIdx].pt;
 
             inlier_idx++;
         }
