@@ -769,9 +769,8 @@ void BestOf2NearestRangeMatcher::operator ()(const std::vector<ImageFeatures> &f
 }
 
 
-void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &features1,
-                                        const cv::detail::ImageFeatures &features2,
-                                        cv::detail::MatchesInfo &matches_info)
+void AffineBestOf2NearestMatcher::match(const ImageFeatures &features1, const ImageFeatures &features2,
+                                        MatchesInfo &matches_info)
 {
     (*impl_)(features1, features2, matches_info);
 
@@ -780,8 +779,8 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
         return;
 
     // Construct point-point correspondences for transform estimation
-    cv::Mat src_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
-    cv::Mat dst_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
+    Mat src_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
+    Mat dst_points(1, static_cast<int>(matches_info.matches.size()), CV_32FC2);
     for (size_t i = 0; i < matches_info.matches.size(); ++i)
     {
         const cv::DMatch &m = matches_info.matches[i];
@@ -843,7 +842,7 @@ void AffineBestOf2NearestMatcher::match(const cv::detail::ImageFeatures &feature
     }
 
     // extend H to represent linear tranformation in homogeneous coordinates
-    matches_info.H.push_back(cv::Mat::zeros(1, 3, CV_64F));
+    matches_info.H.push_back(Mat::zeros(1, 3, CV_64F));
     matches_info.H.at<double>(2, 2) = 1;
 }
 
