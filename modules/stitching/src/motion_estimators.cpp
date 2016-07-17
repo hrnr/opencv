@@ -213,16 +213,6 @@ bool AffineBasedEstimator::estimate(const std::vector<ImageFeatures> &features,
     span_tree.walkBreadthFirst(
             span_tree_centers[0],
             CalcAffineTransform(num_images, pairwise_matches, cameras));
-
-    // convert transform representation from homogeneous coordinates to Rotation + translation form
-    for (size_t i = 0; i < cameras.size(); ++i)
-    {
-        cameras[i].t.at<double>(0,0) = cameras[i].R.at<double>(0,2);
-        cameras[i].t.at<double>(1,0) = cameras[i].R.at<double>(1,2);
-        cameras[i].R.at<double>(0,2) = 0.;
-        cameras[i].R.at<double>(1,2) = 0.;
-    }
-
     // this estimator never fails
     return true;
 }
