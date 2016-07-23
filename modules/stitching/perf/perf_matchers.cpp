@@ -102,7 +102,7 @@ PERF_TEST_P( match, bestOf2Nearest, TEST_DETECTORS)
     }
 
     Mat& estimated_transform = pairwise_matches.H;
-    SANITY_CHECK(estimated_transform, .01, ERROR_RELATIVE);
+    SANITY_CHECK(estimated_transform, .06, ERROR_RELATIVE);
 }
 
 PERF_TEST_P( matchVector, bestOf2NearestVectorFeatures, testing::Combine(
