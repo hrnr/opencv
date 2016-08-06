@@ -660,10 +660,11 @@ void BundleAdjusterAffinePartial::setUpInitialCameraParams(const std::vector<Cam
         //     0  0 1. (optional)
         // cam_params_ model for LevMarq is
         //     (a, b, tx, ty)
-        cam_params_.at<double>(i * 4u + 0u, 0) = cameras[i].R.at<float>(0, 0);
-        cam_params_.at<double>(i * 4u + 1u, 0) = cameras[i].R.at<float>(1, 0);
-        cam_params_.at<double>(i * 4u + 2u, 0) = cameras[i].R.at<float>(0, 2);
-        cam_params_.at<double>(i * 4u + 3u, 0) = cameras[i].R.at<float>(1, 2);
+        double *params = cam_params_.ptr<double>() + i * 4;
+        params[0] = cameras[i].R.at<float>(0, 0);
+        params[1] = cameras[i].R.at<float>(1, 0);
+        params[2] = cameras[i].R.at<float>(0, 2);
+        params[3] = cameras[i].R.at<float>(1, 2);
     }
 }
 
@@ -695,7 +696,7 @@ void BundleAdjusterAffinePartial::calcError(Mat &err)
 {
     err.create(total_num_matches_ * 2, 1, CV_64F);
 
-    size_t match_idx = 0;
+    int match_idx = 0;
     for (size_t edge_idx = 0; edge_idx < edges_.size(); ++edge_idx)
     {
         size_t i = edges_[edge_idx].first;
@@ -742,8 +743,8 @@ void BundleAdjusterAffinePartial::calcError(Mat &err)
             double x = H(0,0)*p1.x + H(0,1)*p1.y + H(0,2);
             double y = H(1,0)*p1.x + H(1,1)*p1.y + H(1,2);
 
-            err.at<double>(2u * match_idx + 0u, 0) = p2.x - x;
-            err.at<double>(2u * match_idx + 1u, 0) = p2.y - y;
+            err.at<double>(2 * match_idx + 0, 0) = p2.x - x;
+            err.at<double>(2 * match_idx + 1, 0) = p2.y - y;
 
             ++match_idx;
         }
