@@ -651,7 +651,7 @@ void BundleAdjusterRay::calcJacobian(Mat &jac)
 void BundleAdjusterAffinePartial::setUpInitialCameraParams(const std::vector<CameraParams> &cameras)
 {
     cam_params_.create(num_images_ * 4, 1, CV_64F);
-    for (size_t i = 0; i < num_images_; ++i)
+    for (size_t i = 0; i < static_cast<size_t>(num_images_); ++i)
     {
         CV_Assert(cameras[i].R.type() == CV_32F);
         // cameras[i].R is
@@ -660,17 +660,17 @@ void BundleAdjusterAffinePartial::setUpInitialCameraParams(const std::vector<Cam
         //     0  0 1. (optional)
         // cam_params_ model for LevMarq is
         //     (a, b, tx, ty)
-        cam_params_.at<double>(i * 4 + 0, 0) = cameras[i].R.at<float>(0, 0);
-        cam_params_.at<double>(i * 4 + 1, 0) = cameras[i].R.at<float>(1, 0);
-        cam_params_.at<double>(i * 4 + 2, 0) = cameras[i].R.at<float>(0, 2);
-        cam_params_.at<double>(i * 4 + 3, 0) = cameras[i].R.at<float>(1, 2);
+        cam_params_.at<double>(i * 4u + 0u, 0) = cameras[i].R.at<float>(0, 0);
+        cam_params_.at<double>(i * 4u + 1u, 0) = cameras[i].R.at<float>(1, 0);
+        cam_params_.at<double>(i * 4u + 2u, 0) = cameras[i].R.at<float>(0, 2);
+        cam_params_.at<double>(i * 4u + 3u, 0) = cameras[i].R.at<float>(1, 2);
     }
 }
 
 
 void BundleAdjusterAffinePartial::obtainRefinedCameraParams(std::vector<CameraParams> &cameras) const
 {
-    for (size_t i = 0; i < num_images_; ++i)
+    for (size_t i = 0; i < static_cast<size_t>(num_images_); ++i)
     {
         // cameras[i].R will be
         //     a -b tx
@@ -742,8 +742,8 @@ void BundleAdjusterAffinePartial::calcError(Mat &err)
             double x = H(0,0)*p1.x + H(0,1)*p1.y + H(0,2);
             double y = H(1,0)*p1.x + H(1,1)*p1.y + H(1,2);
 
-            err.at<double>(2 * match_idx + 0, 0) = p2.x - x;
-            err.at<double>(2 * match_idx + 1, 0) = p2.y - y;
+            err.at<double>(2u * match_idx + 0u, 0) = p2.x - x;
+            err.at<double>(2u * match_idx + 1u, 0) = p2.y - y;
 
             ++match_idx;
         }
