@@ -832,9 +832,10 @@ void BundleAdjusterAffinePartial::calcError(Mat &err)
 
         // invert H1
         Mat H1_aff (H1, Range(0, 2));
-        Mat H1_inv;
+        double H1_inv_buf[6];
+        Mat H1_inv (2, 3, CV_64F, H1_inv_buf);
         invertAffineTransform(H1_aff, H1_inv);
-        H1_aff = H1_inv;
+        H1_inv.copyTo(H1_aff);
 
         Mat_<double> H = H1 * H2;
 
