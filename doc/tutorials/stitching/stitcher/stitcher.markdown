@@ -39,8 +39,8 @@ if (status != Stitcher::OK)
 A new instance of stitcher is created and the @ref cv::Stitcher::stitch will
 do all the hard work.
 
-@ref Stitcher::create can create stitcher in one of the predefined
-configurations (argument `mode`). See @ref Stitcher::Mode for details. These
+@ref cv::Stitcher::create can create stitcher in one of the predefined
+configurations (argument `mode`). See @ref cv::Stitcher::Mode for details. These
 configurations will setup multiple stitcher properties to operate in one of
 predefined scenarios. After you create stitcher in one of predefined
 configurations you can adjust stitching by setting any of the stitcher
@@ -53,7 +53,7 @@ regardless of this flag.
 
 Stitching might fail for several reasons, you should always check if
 everything went good and resulting pano is stored in `pano`. See
-@ref Stitcher::Status documentation for possible error codes.
+@ref cv::Stitcher::Status documentation for possible error codes.
 
 Camera models
 -------------
@@ -75,7 +75,6 @@ specialized devices.
 Certain detailed settings of @ref cv::Stitcher might not make sense. Especially
 you should not mix classes implementing affine model and classes implementing
 Homography model, as they work with different transformations.
-@endnote
 
 Binary
 ------
