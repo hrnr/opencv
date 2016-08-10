@@ -122,7 +122,7 @@ PERF_TEST_P(stitchDatasets, affine, testing::Combine(AFFINE_DATASETS, TEST_DETEC
 
     Mat pano;
     vector<Mat> imgs;
-    size_t width, height, allowed_diff = 10;
+    int width, height, allowed_diff = 10;
     Ptr<detail::FeaturesFinder> featuresFinder;
 
     if(detector == "orb")
