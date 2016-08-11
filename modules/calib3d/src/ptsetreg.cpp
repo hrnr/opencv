@@ -580,37 +580,54 @@ public:
     int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
+        _model.create(2, 3, CV_64F);
         const Point2f* from = m1.ptr<Point2f>();
         const Point2f* to   = m2.ptr<Point2f>();
 
         // for partial affine trasform we need only 2 points
         const int N = 4;
-        double buf[N*N + N + N + 2*3];
-        Mat A(N, N, CV_64F, buf);
-        Mat B(N, 1, CV_64F, buf + N*N);
-        Mat X(N, 1, CV_64F, buf + N*N + N);
-        Mat M(2, 3, CV_64F, buf + N*N + N + N);
-        double* Adata = A.ptr<double>();
+        double buf[N + N];
+        Mat B(N, 1, CV_64F, buf);
+        Mat X(N, 1, CV_64F, buf + N);
+        Mat M = _model.getMat();
         double* Bdata = B.ptr<double>();
         double* Xdata = X.ptr<double>();
         double* Mdata = M.ptr<double>();
-        A = Scalar::all(0);
 
+        /*
+        solving AX = B
+        A =
+            x1 -y1 1 0
+            y1  x1 0 1
+            x2 -y2 1 0
+            y2  x2 0 1
+        we solve that analytically
+        A^-1 = P * 1/d
+        where
+        d = (x1-x2)^2 + (y1-y2)^2
+        for P see below;
+        */
+        // set A^-1
+        double x1 = from[0].x;
+        double y1 = from[0].y;
+        double x2 = from[1].x;
+        double y2 = from[1].y;
+        double A_inv_buf [N][N] =
+        {{(x1 - x2), (y1 - y2), (-x1 + x2), (-y1 + y2)},
+        {(-y1 + y2), (x1 - x2), (y1 - y2), (-x1 + x2)},
+        {(x2 * (-x1 + x2) + y2 * (-y1 + y2)), (-x2*y1 + x1*y2), (x1*(x1 - x2) + y1*(y1 - y2)), (x2*y1 - x1*y2)},
+        {(x2*y1 - x1*y2), (x2*(-x1 + x2) + y2*(-y1 + y2)), (-x2*y1 + x1*y2), (x1*(x1 - x2) + y1*(y1 - y2))}};
+        double d = 1./((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+        Mat A_inv (N, N, CV_64F, A_inv_buf);
+        A_inv *= d;
+        // set B
         for( int i = 0; i < (N/2); i++ )
         {
             Bdata[i*2] = to[i].x;
             Bdata[i*2+1] = to[i].y;
-
-            double *aptr = Adata + i*2*N;
-            aptr[0] = from[i].x;
-            aptr[1] = -from[i].y;
-            aptr[2] = 1.0;
-            aptr[4] = from[i].y;
-            aptr[5] = from[i].x;
-            aptr[7] = 1.0;
         }
-
-        solve(A, B, X, DECOMP_SVD);
+        // solve X
+        X = A_inv * B;
 
         // set model, rotation part is antisymmetric
         Mdata[0] = Mdata[4] = Xdata[0];
@@ -618,7 +635,6 @@ public:
         Mdata[2] = Xdata[2];
         Mdata[3] = Xdata[1];
         Mdata[5] = Xdata[3];
-        M.copyTo(_model);
         return 1;
     }
 };
