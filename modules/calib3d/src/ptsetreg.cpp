@@ -780,9 +780,9 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
     // run robust method
     Ptr<PointSetRegistrator::Callback> cb = makePtr<Affine2DEstimatorCallback>();
     if( method == RANSAC )
-        result = createRANSACPointSetRegistrator(cb, 3, ransacReprojThreshold, confidence, maxIters)->run(dFrom, dTo, H, tempMask);
+        result = createRANSACPointSetRegistrator(cb, 3, ransacReprojThreshold, confidence, static_cast<int>(maxIters))->run(dFrom, dTo, H, tempMask);
     else if( method == LMEDS )
-        result = createLMeDSPointSetRegistrator(cb, 3, confidence, maxIters)->run(dFrom, dTo, H, tempMask);
+        result = createLMeDSPointSetRegistrator(cb, 3, confidence, static_cast<int>(maxIters))->run(dFrom, dTo, H, tempMask);
     else
         CV_Error(Error::StsBadArg, "Unknown or unsupported robust estimation method");
 
@@ -796,7 +796,7 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
             Mat src = dFrom.rowRange(0, inliers_count);
             Mat dst = dTo.rowRange(0, inliers_count);
             Mat Hvec = H.reshape(1, 6);
-            createLMSolver(makePtr<Affine2DRefineCallback>(src, dst), refineIters)->run(Hvec);
+            createLMSolver(makePtr<Affine2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
         }
     }
 
@@ -839,9 +839,9 @@ Mat estimateAffinePartial2D(InputArray _from, InputArray _to, OutputArray _inlie
     // run robust estimation
     Ptr<PointSetRegistrator::Callback> cb = makePtr<AffinePartial2DEstimatorCallback>();
     if( method == RANSAC )
-        result = createRANSACPointSetRegistrator(cb, 2, ransacReprojThreshold, confidence, maxIters)->run(dFrom, dTo, H, tempMask);
+        result = createRANSACPointSetRegistrator(cb, 2, ransacReprojThreshold, confidence, static_cast<int>(maxIters))->run(dFrom, dTo, H, tempMask);
     else if( method == LMEDS )
-        result = createLMeDSPointSetRegistrator(cb, 2, confidence, maxIters)->run(dFrom, dTo, H, tempMask);
+        result = createLMeDSPointSetRegistrator(cb, 2, confidence, static_cast<int>(maxIters))->run(dFrom, dTo, H, tempMask);
     else
         CV_Error(Error::StsBadArg, "Unknown or unsupported robust estimation method");
 
@@ -862,7 +862,7 @@ Mat estimateAffinePartial2D(InputArray _from, InputArray _to, OutputArray _inlie
             double *Hptr = H.ptr<double>();
             double Hvec_buf[4] = {Hptr[0], Hptr[3], Hptr[2], Hptr[5]};
             Mat Hvec (4, 1, CV_64F, Hvec_buf);
-            createLMSolver(makePtr<AffinePartial2DRefineCallback>(src, dst), refineIters)->run(Hvec);
+            createLMSolver(makePtr<AffinePartial2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
             // update H with refined parameters
             Hptr[0] = Hptr[4] = Hvec_buf[0];
             Hptr[1] = -Hvec_buf[1];
