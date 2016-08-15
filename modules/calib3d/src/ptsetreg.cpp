@@ -42,6 +42,7 @@
 //M*/
 
 #include "precomp.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -577,16 +578,59 @@ public:
         _err.create(count, 1, CV_32F);
         Mat err = _err.getMat();
         float* errptr = err.ptr<float>();
+        // transform matrix
+        float F0 = F[0], F1 = F[1], F2 = F[2], F3 = F[3], F4 = F[4], F5 = F[5];
+        int i = 0;
 
-        for(int i = 0; i < count; i++ )
+#if CV_SIMD128
+        if (checkHardwareSupport(CV_CPU_SSE2) || checkHardwareSupport(CV_CPU_NEON))
+        {
+            // load transformation model
+            const v_float32x4 M0 = v_setall_f32(F0), M1 = v_setall_f32(F1), M2 = v_setall_f32(F2);
+            const v_float32x4 M3 = v_setall_f32(F3), M4 = v_setall_f32(F4), M5 = v_setall_f32(F5);
+
+            const int vectorization_width = 8;
+            for (; i < count - vectorization_width + 1 ; i += vectorization_width)
+            {
+                // compute 2 sets of points at once so we could use deinterleave, which doesn't
+                // have 2 channel version
+                // The 'even' variables have points 0, 2, 4, 6 and 'odd' variables have points 1, 3, 5, 7
+                v_float32x4 from_x_even, from_x_odd, from_y_even, from_y_odd;
+                v_float32x4 to_x_even, to_x_odd, to_y_even, to_y_odd;
+                v_load_deinterleave(&from[i].x, from_x_even, from_y_even, from_x_odd, from_y_odd);
+                v_load_deinterleave(&to[i].x, to_x_even, to_y_even, to_x_odd, to_y_odd);
+
+                // Process the evens and then the odds
+                v_float32x4 a_even = M0*from_x_even + M1*from_y_even + M2 - to_x_even;
+                v_float32x4 b_even = M3*from_x_even + M4*from_y_even + M5 - to_y_even;
+                v_float32x4 err_even = a_even*a_even + b_even*b_even;
+
+                v_float32x4 a_odd = M0*from_x_odd + M1*from_y_odd + M2 - to_x_odd;
+                v_float32x4 b_odd = M3*from_x_odd + M4*from_y_odd + M5 - to_y_odd;
+                v_float32x4 err_odd = a_odd*a_odd + b_odd*b_odd;
+
+                // Reorder the results into index order
+                // (not strictly needed if the caller will just compute the average or median of the output array)
+                v_float32x4 err0, err1;
+                v_zip(err_even, err_odd, err0, err1);
+
+                v_store(errptr + i, err0);
+                v_store(errptr + i + vectorization_width/2, err1);
+            }
+        }
+#endif
+
+        // finish remainings from vectorization or compute everything, if running
+        // without vectorization
+        for (; i < count; i++)
         {
             const Point2f& f = from[i];
             const Point2f& t = to[i];
 
-            double a = F[0]*f.x + F[1]*f.y + F[2] - t.x;
-            double b = F[3]*f.x + F[4]*f.y + F[5] - t.y;
+            float a = F0*f.x + F1*f.y + F2 - t.x;
+            float b = F3*f.x + F4*f.y + F5 - t.y;
 
-            errptr[i] = (float)(a*a + b*b);
+            errptr[i] = a*a + b*b;
         }
     }
 
