@@ -577,16 +577,18 @@ public:
         _err.create(count, 1, CV_32F);
         Mat err = _err.getMat();
         float* errptr = err.ptr<float>();
+        // transform matrix
+        float F0 = F[0], F1 = F[1], F2 = F[2], F3 = F[3], F4 = F[4], F5 = F[5];
 
         for(int i = 0; i < count; i++ )
         {
             const Point2f& f = from[i];
             const Point2f& t = to[i];
 
-            double a = F[0]*f.x + F[1]*f.y + F[2] - t.x;
-            double b = F[3]*f.x + F[4]*f.y + F[5] - t.y;
+            float a = F0*f.x + F1*f.y + F2 - t.x;
+            float b = F3*f.x + F4*f.y + F5 - t.y;
 
-            errptr[i] = (float)(a*a + b*b);
+            errptr[i] = a*a + b*b;
         }
     }
 
