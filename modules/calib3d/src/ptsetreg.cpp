@@ -577,8 +577,9 @@ public:
         _err.create(count, 1, CV_32F);
         Mat err = _err.getMat();
         float* errptr = err.ptr<float>();
-        // transform matrix
-        float F0 = F[0], F1 = F[1], F2 = F[2], F3 = F[3], F4 = F[4], F5 = F[5];
+        // transform matrix to floats
+        float F0 = (float)F[0], F1 = (float)F[1], F2 = (float)F[2];
+        float F3 = (float)F[3], F4 = (float)F[4], F5 = (float)F[5];
 
         for(int i = 0; i < count; i++ )
         {
