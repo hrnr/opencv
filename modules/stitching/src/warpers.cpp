@@ -159,7 +159,7 @@ Point PlaneWarper::warp(InputArray src, InputArray K, InputArray R, InputArray T
     Rect dst_roi = buildMaps(src.size(), K, R, T, uxmap, uymap);
 
     dst.create(dst_roi.height + 1, dst_roi.width + 1, src.type());
-    remap(src, dst, uxmap, uymap, interp_mode, border_mode);
+    remap(src, dst, uxmap, uymap, interp_mode, border_mode, Scalar::all(255));
 
     return dst_roi.tl();
 }
