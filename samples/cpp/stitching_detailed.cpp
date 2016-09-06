@@ -574,7 +574,13 @@ int main(int argc, char* argv[])
     {
         Mat K;
         cameras[i].K().convertTo(K, CV_32F);
-        Point tl = warper->warp(images[i], K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, imgs_warped[i]);
+        Rect roi = warper->warpRoi(images[i].size(), K, cameras[i].R);
+        Point tl = roi.tl();
+        Mat H;
+        invertAffineTransform(cameras[i].R.rowRange(0, 2), H);
+        H.at<float>(0, 2) -= tl.x;
+        H.at<float>(1, 2) -= tl.y;
+        warpAffine(images[i], imgs_warped[i], H, roi.size(), INTER_NEAREST, BORDER_CONSTANT, Scalar::all(255));
         corners[i] = tl;
         sizes[i] = imgs_warped[i].size();
         std::cout << "writing to: " << img_names[i] + "_warped.pgm" << std::endl;
