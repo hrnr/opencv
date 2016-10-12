@@ -474,6 +474,50 @@ int main(int argc, char* argv[])
     (*matcher)(features, pairwise_matches);
     matcher->collectGarbage();
 
+//debug matches
+    for (auto& match_info : pairwise_matches) {
+    if (match_info.H.empty() ||
+        match_info.src_img_idx >= match_info.dst_img_idx) {
+      continue;
+    }
+    std::cout << match_info.src_img_idx << " " << match_info.dst_img_idx
+              << std::endl
+              << "features: "
+              << features[size_t(match_info.src_img_idx)].keypoints.size()
+              << " "
+              << features[size_t(match_info.dst_img_idx)].keypoints.size()
+              << std::endl
+              << "matches: " << match_info.matches.size() << std::endl
+              << "inliers: " << match_info.num_inliers << std::endl
+              << "inliers/matches ratio: "
+              << match_info.num_inliers / double(match_info.matches.size())
+              << std::endl
+              << "confidence: " << match_info.confidence << std::endl
+              << match_info.H << std::endl;
+    cv::Mat img;
+    // draw all matches
+    cv::drawMatches(images[size_t(match_info.src_img_idx)],
+                    features[size_t(match_info.src_img_idx)].keypoints,
+                    images[size_t(match_info.dst_img_idx)],
+                    features[size_t(match_info.dst_img_idx)].keypoints,
+                    match_info.matches, img);
+    cv::imwrite(std::to_string(match_info.src_img_idx) + "_" +
+                    std::to_string(match_info.dst_img_idx) + "_matches.png",
+                img);
+    // draw inliers only
+    cv::drawMatches(
+        images[size_t(match_info.src_img_idx)],
+        features[size_t(match_info.src_img_idx)].keypoints,
+        images[size_t(match_info.dst_img_idx)],
+        features[size_t(match_info.dst_img_idx)].keypoints,
+        match_info.matches, img, cv::Scalar::all(-1), cv::Scalar::all(-1),
+        *reinterpret_cast<const std::vector<char>*>(&match_info.inliers_mask));
+    cv::imwrite(std::to_string(match_info.src_img_idx) + "_" +
+                    std::to_string(match_info.dst_img_idx) +
+                    "_matches_inliers.png",
+                img);
+  }
+
     LOGLN("Pairwise matching, time: " << ((getTickCount() - t) / getTickFrequency()) << " sec");
 
     // Check if we should save matches graph
