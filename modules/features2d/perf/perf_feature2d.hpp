@@ -25,7 +25,7 @@ using std::tr1::get;
     BRISK_DEFAULT,                                                                      \
     KAZE_DEFAULT
 
-#define CV_ENUM_EXPAND(...) CV_ENUM(__VA_ARGS__)
+#define CV_ENUM_EXPAND(name, ...) CV_ENUM(name, __VA_ARGS__)
 
 enum Feature2DVals { DETECTORS_ONLY, DETECTORS_EXTRACTORS };
 CV_ENUM_EXPAND(Feature2DType, DETECTORS_ONLY, DETECTORS_EXTRACTORS)
