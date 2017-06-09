@@ -643,7 +643,6 @@ public:
   {
     for (int i = range.start; i < range.end; i++)
     {
-      AKAZEFeatures::Compute_Main_Orientation((*keypoints_)[i], *evolution_);
       Get_MLDB_Full_Descriptor((*keypoints_)[i], descriptors_->ptr<unsigned char>(i));
     }
   }
