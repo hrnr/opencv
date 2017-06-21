@@ -197,20 +197,11 @@ public:
       float *lyy = e.Lyy.ptr<float>();
       float *ldet = e.Ldet.ptr<float>();
 
-      // we cannot use cv:Scharr here, because we need to handle also
-      // kernel sizes other than 3
-
-      // compute kernels
-      Mat DxKx, DxKy, DyKx, DyKy;
-      compute_derivative_kernels(DxKx, DxKy, 1, 0, e.sigma_size);
-      compute_derivative_kernels(DyKx, DyKy, 0, 1, e.sigma_size);
-
-      // compute the multiscale derivatives
-      sepFilter2D(e.Lsmooth, e.Lx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, e.Lxx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, e.Lxy, CV_32F, DyKx, DyKy);
-      sepFilter2D(e.Lsmooth, e.Ly, CV_32F, DyKx, DyKy);
-      sepFilter2D(e.Ly, e.Lyy, CV_32F, DyKx, DyKy);
+      Scharr(e.Lsmooth, e.Lx, CV_32F, 1, 0, e.sigma_size, 0, BORDER_DEFAULT);
+      Scharr(e.Lsmooth, e.Ly, CV_32F, 0, 1, e.sigma_size, 0, BORDER_DEFAULT);
+      Scharr(e.Lx, e.Lxx, CV_32F, 1, 0, e.sigma_size, 0, BORDER_DEFAULT);
+      Scharr(e.Lx, e.Lxy, CV_32F, 0, 1, e.sigma_size, 0, BORDER_DEFAULT);
+      Scharr(e.Ly, e.Lyy, CV_32F, 0, 1, e.sigma_size, 0, BORDER_DEFAULT);
 
       // compute Ldet by Lxx.mul(Lyy) - Lxy.mul(Lxy)
       for (int j = 0; j < total; j++) {
