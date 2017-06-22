@@ -43,6 +43,7 @@ AKAZEFeatures::AKAZEFeatures(const AKAZEOptions& options) : options_(options) {
  * @brief This method allocates the memory for the nonlinear diffusion evolution
  */
 void AKAZEFeatures::Allocate_Memory_Evolution(void) {
+  CV_INSTRUMENT_REGION()
 
   float rfactor = 0.0f;
   int level_height = 0, level_width = 0;
