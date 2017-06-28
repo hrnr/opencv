@@ -143,16 +143,19 @@ int AKAZEFeatures::Create_Nonlinear_Scale_Space(const Mat& img)
       half_size.height /= 2;
       resize(evolution_[i - 1].Lt, evolution_[i].Lt, half_size, 0, 0, INTER_AREA);
       options_.kcontrast = options_.kcontrast*0.75f;
+
+      GaussianBlur(evolution_[i].Lt, evolution_[i].Lsmooth, Size(5, 5), 1.0f, 1.0f, BORDER_REPLICATE);
+
+      // Compute the Gaussian derivatives Lx and Ly
+      Scharr(evolution_[i].Lsmooth, evolution_[i].Lx, CV_32F, 1, 0, 1.0, 0, BORDER_DEFAULT);
+      Scharr(evolution_[i].Lsmooth, evolution_[i].Ly, CV_32F, 0, 1, 1.0, 0, BORDER_DEFAULT);
     }
     else {
       evolution_[i - 1].Lt.copyTo(evolution_[i].Lt);
+      evolution_[i - 1].Lx.copyTo(evolution_[i].Lx);
+      evolution_[i - 1].Ly.copyTo(evolution_[i].Ly);
+      evolution_[i - 1].Lsmooth.copyTo(evolution_[i].Lsmooth);
     }
-
-    GaussianBlur(evolution_[i].Lt, evolution_[i].Lsmooth, Size(5, 5), 1.0f, 1.0f, BORDER_REPLICATE);
-
-    // Compute the Gaussian derivatives Lx and Ly
-    Scharr(evolution_[i].Lsmooth, evolution_[i].Lx, CV_32F, 1, 0, 1.0, 0, BORDER_DEFAULT);
-    Scharr(evolution_[i].Lsmooth, evolution_[i].Ly, CV_32F, 0, 1, 1.0, 0, BORDER_DEFAULT);
 
     // Compute the conductivity equation
     switch (options_.diffusivity) {
