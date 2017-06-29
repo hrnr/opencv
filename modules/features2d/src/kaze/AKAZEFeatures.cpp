@@ -47,6 +47,7 @@ void AKAZEFeatures::Allocate_Memory_Evolution(void) {
 
   float rfactor = 0.0f;
   int level_height = 0, level_width = 0;
+  octaves_idx_.reserve(options_.omax);
 
   // Allocate the dimension of the matrices for the evolution
   for (int i = 0, power = 1; i <= options_.omax - 1; i++, power *= 2) {
@@ -60,18 +61,18 @@ void AKAZEFeatures::Allocate_Memory_Evolution(void) {
       break;
     }
 
+    // save the index of first sublevel for current octave
+    octaves_idx_.push_back(evolution_.size());
+
     for (int j = 0; j < options_.nsublevels; j++) {
-      TEvolution step;
+      evolution_.push_back(TEvolution());
+      TEvolution& step = evolution_.back();
       Size size(level_width, level_height);
       // TODO: investigate why these 2 need to be explicitly zero
       step.Lx = Mat::zeros(level_height, level_width, CV_32F);
       step.Ly = Mat::zeros(level_height, level_width, CV_32F);
 
-      step.Lxx.create(size, CV_32F);
-      step.Lxy.create(size, CV_32F);
-      step.Lyy.create(size, CV_32F);
       step.Lt.create(size, CV_32F);
-      step.Ldet.create(size, CV_32F);
       step.Lflow.create(size, CV_32F);
       step.Lstep.create(size, CV_32F);
 
@@ -81,7 +82,6 @@ void AKAZEFeatures::Allocate_Memory_Evolution(void) {
       step.octave = i;
       step.sublevel = j;
       step.octave_ratio = (float)power;
-      evolution_.push_back(step);
     }
   }
 
@@ -133,6 +133,9 @@ int AKAZEFeatures::Create_Nonlinear_Scale_Space(const Mat& img)
 
   // First compute the kcontrast factor
   options_.kcontrast = compute_k_percentile(img, options_.kcontrast_percentile, 1.0f, options_.kcontrast_nbins, 0, 0);
+
+  // generate halfsampled images for each octave
+
 
   // Now generate the rest of evolution levels
   for (size_t i = 1; i < evolution_.size(); i++) {
@@ -204,8 +207,8 @@ void AKAZEFeatures::Feature_Detection(std::vector<KeyPoint>& kpts)
 class DeterminantHessianResponse : public ParallelLoopBody
 {
 public:
-    explicit DeterminantHessianResponse(std::vector<TEvolution>& ev)
-    : evolution_(&ev)
+    explicit DeterminantHessianResponse(std::vector<TEvolution>& ev, const std::vector<size_t>& octaves_idx)
+    : evolution_(&ev), octaves_idx_(&octaves_idx)
   {
   }
 
@@ -213,14 +216,7 @@ public:
   {
     for (int i = range.start; i < range.end; i++)
     {
-      TEvolution &e = (*evolution_)[i];
-
-      const int total = e.Lsmooth.cols * e.Lsmooth.rows;
-      const int sigma_size_quat = e.sigma_size * e.sigma_size * e.sigma_size * e.sigma_size;
-      float *lxx = e.Lxx.ptr<float>();
-      float *lxy = e.Lxy.ptr<float>();
-      float *lyy = e.Lyy.ptr<float>();
-      float *ldet = e.Ldet.ptr<float>();
+      TEvolution &e = (*evolution_)[(*octaves_idx_)[i]];
 
       // we cannot use cv:Scharr here, because we need to handle also
       // kernel sizes other than 3
@@ -231,11 +227,20 @@ public:
       compute_derivative_kernels(DyKx, DyKy, 0, 1, e.sigma_size);
 
       // compute the multiscale derivatives
+      Mat Lxx, Lxy, Lyy;
       sepFilter2D(e.Lsmooth, e.Lx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, e.Lxx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, e.Lxy, CV_32F, DyKx, DyKy);
+      sepFilter2D(e.Lx, Lxx, CV_32F, DxKx, DxKy);
+      sepFilter2D(e.Lx, Lxy, CV_32F, DyKx, DyKy);
       sepFilter2D(e.Lsmooth, e.Ly, CV_32F, DyKx, DyKy);
-      sepFilter2D(e.Ly, e.Lyy, CV_32F, DyKx, DyKy);
+      sepFilter2D(e.Ly, Lyy, CV_32F, DyKx, DyKy);
+
+      const int total = e.Lsmooth.cols * e.Lsmooth.rows;
+      const int sigma_size_quat = e.sigma_size * e.sigma_size * e.sigma_size * e.sigma_size;
+      e.Ldet.create(e.Lsmooth.size(), e.Lsmooth.type());
+      float *lxx = Lxx.ptr<float>();
+      float *lxy = Lxy.ptr<float>();
+      float *lyy = Lyy.ptr<float>();
+      float *ldet = e.Ldet.ptr<float>();
 
       // compute Ldet by Lxx.mul(Lyy) - Lxy.mul(Lxy)
       for (int j = 0; j < total; j++) {
@@ -245,7 +250,8 @@ public:
   }
 
 private:
-  std::vector<TEvolution>*  evolution_;
+  std::vector<TEvolution>* evolution_;
+  const std::vector<size_t>* octaves_idx_;
 };
 
 
@@ -256,8 +262,21 @@ private:
 void AKAZEFeatures::Compute_Determinant_Hessian_Response(void) {
   CV_INSTRUMENT_REGION()
 
-  parallel_for_(Range(0, (int)evolution_.size()),
-                                        DeterminantHessianResponse(evolution_));
+  // compute derivatives and determinant for all octaves
+  parallel_for_(Range(0, (int)octaves_idx_.size()), DeterminantHessianResponse(evolution_, octaves_idx_));
+
+  // create aliases to derivatives and determinat in all sublevels of octave
+  for (size_t i = 0; i < evolution_.size(); ++i) {
+    TEvolution &e = evolution_[i];
+    if (!e.Ldet.empty()) {
+      continue;
+    }
+
+    // alias to already computed octave sublevel
+    evolution_[i].Lx = evolution_[i - 1].Lx;
+    evolution_[i].Ly = evolution_[i - 1].Ly;
+    evolution_[i].Ldet = evolution_[i - 1].Ldet;
+  }
 }
 
 /* ************************************************************************* */
@@ -722,7 +741,11 @@ void AKAZEFeatures::Compute_Descriptors(std::vector<KeyPoint>& kpts, Mat& desc)
 
   for(size_t i = 0; i < kpts.size(); i++)
   {
-      CV_Assert(0 <= kpts[i].class_id && kpts[i].class_id < static_cast<int>(evolution_.size()));
+      // CV_Assert(0 <= kpts[i].class_id && kpts[i].class_id < static_cast<int>(evolution_.size()));
+      if (0 <= kpts[i].class_id && kpts[i].class_id < static_cast<int>(evolution_.size())) {
+        kpts.resize(i);
+        break;
+      }
   }
 
   // Allocate memory for the matrix with the descriptors

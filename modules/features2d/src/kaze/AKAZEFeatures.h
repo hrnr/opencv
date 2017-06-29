@@ -25,6 +25,7 @@ private:
 
   AKAZEOptions options_;                ///< Configuration options for AKAZE
   std::vector<TEvolution> evolution_;        ///< Vector of nonlinear diffusion evolution
+  std::vector<size_t> octaves_idx_; ///< Indexes of octaves first sublevel in `evolution_`
 
   /// FED parameters
   int ncycles_;                  ///< Number of cycles
