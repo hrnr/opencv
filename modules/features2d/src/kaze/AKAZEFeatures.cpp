@@ -152,9 +152,9 @@ int AKAZEFeatures::Create_Nonlinear_Scale_Space(const Mat& img)
     }
     else {
       evolution_[i - 1].Lt.copyTo(evolution_[i].Lt);
-      evolution_[i - 1].Lx.copyTo(evolution_[i].Lx);
-      evolution_[i - 1].Ly.copyTo(evolution_[i].Ly);
-      evolution_[i - 1].Lsmooth.copyTo(evolution_[i].Lsmooth);
+      evolution_[i].Lx = evolution_[i - 1].Lx;
+      evolution_[i].Ly = evolution_[i - 1].Ly;
+      evolution_[i].Lsmooth = evolution_[i - 1].Lsmooth;
     }
 
     // Compute the conductivity equation
