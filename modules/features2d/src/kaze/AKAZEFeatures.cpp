@@ -434,10 +434,10 @@ public:
 
       // compute Ldet by Lxx.mul(Lyy) - Lxy.mul(Lxy)
       const int sigma_size_quat = e.sigma_size * e.sigma_size * e.sigma_size * e.sigma_size;
-      Mat Mxx = Lxx.getMat(ACCESS_READ), Mxy = Lxy.getMat(ACCESS_READ), Myy = Lyy.getMat(ACCESS_READ);
-      float *lxx = Mxx.ptr<float>();
-      float *lxy = Mxy.ptr<float>();
-      float *lyy = Myy.ptr<float>();
+      // Mat Mxx = Lxx.getMat(ACCESS_READ), Mxy = Lxy.getMat(ACCESS_READ), Myy = Lyy.getMat(ACCESS_READ);
+      float *lxx = Lxx.ptr<float>();
+      float *lxy = Lxy.ptr<float>();
+      float *lyy = Lyy.ptr<float>();
       float *ldet = e.Ldet.ptr<float>();
       for (int j = 0; j < total; j++) {
         ldet[j] = (lxx[j] * lyy[j] - lxy[j] * lxy[j]) * sigma_size_quat;
