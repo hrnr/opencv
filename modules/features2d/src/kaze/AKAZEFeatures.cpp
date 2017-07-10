@@ -413,12 +413,20 @@ public:
       compute_derivative_kernels(DxKx, DxKy, 1, 0, e.sigma_size);
       compute_derivative_kernels(DyKx, DyKy, 0, 1, e.sigma_size);
 
+      e.Lsmooth.convertTo(e.Lsmooth, CV_8U, 255.0, 0);
+
       // compute the multiscale derivatives
       sepFilter2D(e.Lsmooth, e.Lx, CV_32F, DxKx, DxKy);
       sepFilter2D(e.Lx, Lxx, CV_32F, DxKx, DxKy);
       sepFilter2D(e.Lx, Lxy, CV_32F, DyKx, DyKy);
       sepFilter2D(e.Lsmooth, e.Ly, CV_32F, DyKx, DyKy);
       sepFilter2D(e.Ly, Lyy, CV_32F, DyKx, DyKy);
+
+      Lxx.convertTo(Lxx, CV_32F, 1.0 / 255.0, 0);
+      Lxy.convertTo(Lxy, CV_32F, 1.0 / 255.0, 0);
+      Lyy.convertTo(Lyy, CV_32F, 1.0 / 255.0, 0);
+      e.Lx.convertTo(e.Lx, CV_32F, 1.0 / 255.0, 0);
+      e.Ly.convertTo(e.Ly, CV_32F, 1.0 / 255.0, 0);
 
       // free Lsmooth to same some space in the pyramid, it is not needed anymore
       e.Lsmooth.release();
