@@ -416,11 +416,11 @@ public:
       e.Lsmooth.convertTo(e.Lsmooth, CV_8U, 255.0, 0);
 
       // compute the multiscale derivatives
-      sepFilter2D(e.Lsmooth, e.Lx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, Lxx, CV_32F, DxKx, DxKy);
-      sepFilter2D(e.Lx, Lxy, CV_32F, DyKx, DyKy);
-      sepFilter2D(e.Lsmooth, e.Ly, CV_32F, DyKx, DyKy);
-      sepFilter2D(e.Ly, Lyy, CV_32F, DyKx, DyKy);
+      sepFilter2D(e.Lsmooth, e.Lx, CV_8U, DxKx, DxKy);
+      sepFilter2D(e.Lx, Lxx, CV_8U, DxKx, DxKy);
+      sepFilter2D(e.Lx, Lxy, CV_8U, DyKx, DyKy);
+      sepFilter2D(e.Lsmooth, e.Ly, CV_8U, DyKx, DyKy);
+      sepFilter2D(e.Ly, Lyy, CV_8U, DyKx, DyKy);
 
       Lxx.convertTo(Lxx, CV_32F, 1.0 / 255.0, 0);
       Lxy.convertTo(Lxy, CV_32F, 1.0 / 255.0, 0);
