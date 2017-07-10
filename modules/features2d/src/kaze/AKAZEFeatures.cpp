@@ -396,7 +396,7 @@ public:
 
   void operator()(const Range& range) const
   {
-    UMat Lxx, Lxy, Lyy;
+    Mat Lxx, Lxy, Lyy;
 
     for (int i = range.start; i < range.end; i++)
     {
@@ -413,13 +413,14 @@ public:
       compute_derivative_kernels(DxKx, DxKy, 1, 0, e.sigma_size);
       compute_derivative_kernels(DyKx, DyKy, 0, 1, e.sigma_size);
 
-      e.Lsmooth.convertTo(e.Lsmooth, CV_8U, 255.0, 0);
+      Mat Lsmooth;
+      e.Lsmooth.convertTo(Lsmooth, CV_8U, 255.0, 0);
 
       // compute the multiscale derivatives
-      sepFilter2D(e.Lsmooth, e.Lx, CV_8U, DxKx, DxKy);
+      sepFilter2D(Lsmooth, e.Lx, CV_8U, DxKx, DxKy);
       sepFilter2D(e.Lx, Lxx, CV_8U, DxKx, DxKy);
       sepFilter2D(e.Lx, Lxy, CV_8U, DyKx, DyKy);
-      sepFilter2D(e.Lsmooth, e.Ly, CV_8U, DyKx, DyKy);
+      sepFilter2D(Lsmooth, e.Ly, CV_8U, DyKx, DyKy);
       sepFilter2D(e.Ly, Lyy, CV_8U, DyKx, DyKy);
 
       Lxx.convertTo(Lxx, CV_32F, 1.0 / 255.0, 0);
