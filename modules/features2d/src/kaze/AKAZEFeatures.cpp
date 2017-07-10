@@ -396,7 +396,7 @@ public:
 
   void operator()(const Range& range) const
   {
-    Mat Lxx, Lxy, Lyy;
+    Mat Lxx, Lxy, Lyy, Lx, Ly;
 
     for (int i = range.start; i < range.end; i++)
     {
@@ -417,17 +417,17 @@ public:
       e.Lsmooth.convertTo(Lsmooth, CV_8U, 255.0, 0);
 
       // compute the multiscale derivatives
-      sepFilter2D(Lsmooth, e.Lx, CV_8U, DxKx, DxKy);
-      sepFilter2D(e.Lx, Lxx, CV_8U, DxKx, DxKy);
-      sepFilter2D(e.Lx, Lxy, CV_8U, DyKx, DyKy);
-      sepFilter2D(Lsmooth, e.Ly, CV_8U, DyKx, DyKy);
-      sepFilter2D(e.Ly, Lyy, CV_8U, DyKx, DyKy);
+      sepFilter2D(Lsmooth, Lx, CV_8U, DxKx, DxKy);
+      sepFilter2D(Lx, Lxx, CV_8U, DxKx, DxKy);
+      sepFilter2D(Lx, Lxy, CV_8U, DyKx, DyKy);
+      sepFilter2D(Lsmooth, Ly, CV_8U, DyKx, DyKy);
+      sepFilter2D(Ly, Lyy, CV_8U, DyKx, DyKy);
 
       Lxx.convertTo(Lxx, CV_32F, 1.0 / 255.0, 0);
       Lxy.convertTo(Lxy, CV_32F, 1.0 / 255.0, 0);
       Lyy.convertTo(Lyy, CV_32F, 1.0 / 255.0, 0);
-      e.Lx.convertTo(e.Lx, CV_32F, 1.0 / 255.0, 0);
-      e.Ly.convertTo(e.Ly, CV_32F, 1.0 / 255.0, 0);
+      Lx.convertTo(e.Lx, CV_32F, 1.0 / 255.0, 0);
+      Ly.convertTo(e.Ly, CV_32F, 1.0 / 255.0, 0);
 
       // free Lsmooth to same some space in the pyramid, it is not needed anymore
       e.Lsmooth.release();
