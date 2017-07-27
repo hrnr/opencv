@@ -639,13 +639,8 @@ find_neighbor_point(const int x, const int y, const Mat &mask, const int search_
       if (curr[j] == 0) {
         continue; // skip non-keypoint
       }
-      // fine-compare with L2 metric (L2 is smaller than our search window)
-      int dx = j - x;
-      int dy = i - y;
-      if (dx * dx + dy * dy <= search_radius * search_radius) {
-        idx = i * mask.cols + j;
-        return true;
-      }
+      idx = i * mask.cols + j;
+      return true;
     }
   }
 
