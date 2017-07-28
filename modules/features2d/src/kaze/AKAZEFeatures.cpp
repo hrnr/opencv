@@ -770,7 +770,7 @@ void AKAZEFeatures::Find_Scale_Space_Extrema(std::vector<Mat>& keypoints_by_laye
   }
 
   // Now filter points with the upper scale level (the other direction)
-  for (int i = keypoints_by_layers.size() - 2; i >= 0; i--) {
+  for (int i = (int)keypoints_by_layers.size() - 2; i >= 0; i--) {
     // constants for this level
     const Mat &keypoints = keypoints_by_layers[i];
     const uchar *const kpts = keypoints_by_layers[i].ptr<uchar>();
@@ -835,7 +835,7 @@ void AKAZEFeatures::Do_Subpixel_Refinement(
         kp.angle = -1;
         kp.response = ldet[j];
         kp.octave = e.octave;
-        kp.class_id = i;
+        kp.class_id = static_cast<int>(i);
 
         // Compute the gradient
         float Dx = 0.5f * (ldet[ y     *cols + x + 1] - ldet[ y     *cols + x - 1]);
@@ -848,10 +848,10 @@ void AKAZEFeatures::Do_Subpixel_Refinement(
                             ldet[(y - 1)*cols + x + 1] - ldet[(y + 1)*cols + x - 1]);
 
         // Solve the linear system
-        Matx22f A{ Dxx, Dxy,
-                   Dxy, Dyy };
-        Vec2f   b{ -Dx, -Dy };
-        Vec2f   dst{ 0.0f, 0.0f };
+        Matx22f A( Dxx, Dxy,
+                   Dxy, Dyy );
+        Vec2f   b( -Dx, -Dy );
+        Vec2f   dst( 0.0f, 0.0f );
         solve(A, b, dst, DECOMP_LU);
 
         float dx = dst(0);
