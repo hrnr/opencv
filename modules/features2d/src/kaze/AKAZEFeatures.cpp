@@ -281,8 +281,11 @@ non_linear_diffusion_step(const UMat& Lt, const UMat& Lf, UMat& Lstep, float ste
 
   // when on CPU UMats should be already allocated on CPU so getMat here is basicallly no-op
   Mat Mstep = Lstep.getMat(ACCESS_WRITE);
-  parallel_for_(Range(0, Lt.rows), NonLinearScalarDiffusionStep(Lt.getMat(ACCESS_READ),
-    Lf.getMat(ACCESS_READ), Mstep, step_size));
+  // parallel_for_(Range(0, Lt.rows), NonLinearScalarDiffusionStep(Lt.getMat(ACCESS_READ),
+  //   Lf.getMat(ACCESS_READ), Mstep, step_size));
+  NonLinearScalarDiffusionStep body(Lt.getMat(ACCESS_READ),
+    Lf.getMat(ACCESS_READ), Mstep, step_size);
+  body(Range(0, Lt.rows));
 }
 
 /**
