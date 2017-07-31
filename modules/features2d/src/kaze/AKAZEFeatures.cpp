@@ -249,12 +249,29 @@ private:
   float step_size_;
 };
 
+/**
+* @brief This function computes a scalar non-linear diffusion step. Output will be
+* added to Lt
+* @param Lt Base image in the evolution
+* @param Lf Conductivity image
+* @note Forward Euler Scheme 3x3 stencil
+* The function c is a scalar value that depends on the gradient norm
+* dL_by_ds = d(c dL_by_dx)_by_dx + d(c dL_by_dy)_by_dy
+*/
+static inline void
+nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
+{
+
+}
+
 #ifdef HAVE_OPENCL
 static inline bool
-ocl_non_linear_diffusion_step(const UMat& Lt, const UMat& Lf, UMat& Lstep, float step_size)
+ocl_non_linear_diffusion_step(const UMat& Lf, const UMat& Lt, UMat& Lstep, float step_size)
 {
   if(!Lt.isContinuous())
     return false;
+
+  Lstep.create(Lt.size(), Lt.type());
 
   size_t globalSize[] = {(size_t)Lt.cols, (size_t)Lt.rows};
 
@@ -262,27 +279,31 @@ ocl_non_linear_diffusion_step(const UMat& Lt, const UMat& Lf, UMat& Lstep, float
   if( ker.empty() )
     return false;
 
-  return ker.args(
+  bool success = ker.args(
     ocl::KernelArg::ReadOnly(Lt),
     ocl::KernelArg::PtrReadOnly(Lf),
     ocl::KernelArg::PtrWriteOnly(Lstep),
     step_size).run(2, globalSize, 0, true);
+
+  if (!success)
+    return false;
+
+  add(Lt, Lstep, Lt);
+
+  return true;
 }
 #endif // HAVE_OPENCL
 
 static inline void
-non_linear_diffusion_step(const UMat& Lt, const UMat& Lf, UMat& Lstep, float step_size)
+non_linear_diffusion_step(const UMat& Lflow, UMat& Lt, UMat& Lstep, float step_size)
 {
   CV_INSTRUMENT_REGION()
 
-  Lstep.create(Lt.size(), Lt.type());
-
-  CV_OCL_RUN(true, ocl_non_linear_diffusion_step(Lt, Lf, Lstep, step_size));
+  CV_OCL_RUN(true, ocl_non_linear_diffusion_step(Lflow, Lt, Lstep, step_size));
 
   // when on CPU UMats should be already allocated on CPU so getMat here is basicallly no-op
-  Mat Mstep = Lstep.getMat(ACCESS_WRITE);
-  parallel_for_(Range(0, Lt.rows), NonLinearScalarDiffusionStep(Lt.getMat(ACCESS_READ),
-    Lf.getMat(ACCESS_READ), Mstep, step_size));
+  Mat Mt = Lt.getMat(ACCESS_RW);
+  nld_step_scalar_add(Lflow.getMat(ACCESS_READ), Mt, step_size);
 }
 
 /**
@@ -477,8 +498,7 @@ void AKAZEFeatures::Create_Nonlinear_Scale_Space(InputArray img)
     std::vector<float> &tsteps = tsteps_[i - 1];
     for (size_t j = 0; j < tsteps.size(); j++) {
       const float step_size = tsteps[j] * 0.5f;
-      non_linear_diffusion_step(e.Lt, Lflow, Lstep, step_size);
-      add(e.Lt, Lstep, e.Lt);
+      non_linear_diffusion_step(Lflow, e.Lt, Lstep, step_size);
     }
   }
 
