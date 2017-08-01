@@ -250,6 +250,26 @@ private:
 };
 
 /**
+ * @brief Stencil for nld_step_scalar_add
+ */
+static inline float
+nld_kernel(float lt_a, float lt_b, float lt_cp, float lt_c, float lt_cn,
+  float lf_a, float lf_b, float lf_cp, float lf_c, float lf_cn)
+{
+  /* The labeling scheme for this five star stencil:
+   [    a    ]
+   [ cp c cn ]
+   [    b    ]
+  */
+
+  return (lf_c + lf_cn)*(lt_cn - lt_c) +
+         (lf_c + lf_cp)*(lt_cp - lt_c) +
+         (lf_c + lf_b )*(lt_b  - lt_c) +
+         (lf_c + lf_a )*(lt_a  - lt_c);
+
+}
+
+/**
 * @brief This function computes a scalar non-linear diffusion step. Output will be
 * added to Lt
 * @param Lt Base image in the evolution
@@ -261,7 +281,110 @@ private:
 static inline void
 nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
 {
+  /* The labeling scheme for this five star stencil:
+   [    a    ]
+   [ cp c cn ]
+   [    b    ]
+  */
+  // this fuction optimizes cache accesses by slicing matrix vertically
+  const static block_size = 512;
 
+  // saves original values of Lt on slice boundaries (we don't want to store
+  // full-size temporary metrix). this way we can merge addition and
+  // computation of step into one operation.
+  Mat col_buffer;
+  Lt.col(0).copyTo(col_buffer);
+  float *c_buf = col_buffer.ptr<float>();
+  // saves original values for upper row of kernel
+  Mat row_buffer (1, block_size, Lt.type());
+  float *r_buf = row_buffer.ptr<float>();
+
+  int col_idx = 0;
+  for (int i = 0; i < (Lt.cols-1)/block_size; ++i, col_idx += block_size) {
+    // init row buffer for the first row
+    float *lt_first = Lt.ptr<float>(0, col_idx);
+    std::memcpy(r_buf, lt_first, block_size * sizeof(float));
+
+    for (int j = 0; j < Lt.rows; ++j) {
+      // handle edge conditions
+      int prev_col_idx = std::max(0, col_idx-1); // handle first col
+      int prev_row_idx = std::max(0, j-1); // handle first row
+      int next_row_idx = std::min(j + 1, Lt.rows - 1); // handle last row
+      // fetch kernel sources from lt, from matrices and buffers
+      float *lt_row = Lt.ptr<float>(j, col_idx);
+      float *lt_row_next = Lt.ptr<float>(next_row_idx, col_idx);
+      float lt_cp = c_buf[j];
+      float lt_c = lt_row[0];
+      float lt_cn = lt_row[1];
+      float lt_a = r_buf[0];
+      float lt_b = lt_row_next[0];
+      // same for lf
+      float *lf_row = Lflow.ptr<float>(j, col_idx);
+      float *lf_row_next = Lflow.ptr<float>(next_row_idx, col_idx);
+      float *lf_row_prev = Lflow.ptr<float>(prev_row_idx, col_idx);
+      float lf_cp = Lflow.ptr<float>(j, prev_col_idx);
+      float lf_c = lf_row[0];
+      float lf_cn = lf_row[1];
+      float lf_a = lf_row_prev[0];
+      float lf_b = lf_row_next[0];
+
+      // hot loop
+      for (int k = 0; k < block_size;) {
+        float step = nld_kernel(lt_a, lt_b, lt_cp, lt_c, lt_cn,
+          lf_a, lf_b, lf_cp, lf_c, lf_cn) * step_size;
+        lt_row[k] += step; // add step to lt
+        // save original value without step (for next row)
+        r_buf[k] = lt_c;
+
+        // move kernel sources
+        ++k;
+        // lt
+        lt_cp = lt_c;
+        lt_c = lt_cn;
+        lt_cn = lt_row[k+1];
+        lt_a = r_buf[k];
+        lt_b = lt_row_next[k];
+        // lf
+      }
+      // save original value to col buffer
+      c_buf[j] = lt_cp;
+    }
+  }
+  // handle last block specially - esp. last column.
+  col_idx -= block_size;
+  int remaining = Lt.cols - col_idx;
+  if (remaining > 0) {
+    // init row buffer for the first row
+    float *lt_first = Lt.ptr<float>(0, col_idx);
+    std::memcpy(r_buf, lt_first, remaining * sizeof(float));
+
+    for (int j = 0; j < Lt.rows; ++j) {
+      float *lt_row = Lt.ptr<float>(j, col_idx);
+      int last_row_idx = std::min(j + 1, Lt.rows - 1); // handle last row
+      float *lt_row_next = Lt.ptr<float>(last_row_idx, col_idx);
+      // fetch kernel sources, from matrices and buffers
+      float lt_cp = c_buf[j];
+      float lt_c = lt_row[0];
+      float lt_cn = lt_row[std::min(1, remaining)];
+      float lt_a = r_buf[0];
+      float lt_b = lt_row_next[0];
+      for (int k = 0; k < remaining;) {
+        float step = nld_kernel(lt_a, lt_b, lt_cp, lt_c, lt_cn,
+        lf_a, lf_b, lf_cp, lf_c, lf_cn) * step_size;
+        lt_row[k] += step; // add step to lt
+        // save original value without step (for next row)
+        r_buf[k] = lt_c;
+
+        // move kernel sources
+        ++k;
+        lt_cp = lt_c;
+        lt_c = lt_cn;
+        lt_cn = lt_row[std::min(k+1, remaining)];
+        lt_a = r_buf[k];
+        lt_b = lt_row_next[k];
+      }
+    }
+  }
 }
 
 #ifdef HAVE_OPENCL
