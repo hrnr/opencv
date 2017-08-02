@@ -301,7 +301,7 @@ nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
 
   for (int col_idx = 0; col_idx < Lt.cols; col_idx += block_size) {
     // handle edge conditions
-    int remaining = Lt.cols - col_idx;
+    int remaining = std::min(block_size, Lt.cols - col_idx); // handle last smaller block
     int prev_col_idx = std::max(0, col_idx - 1); // handle first col
     int next_col_idx = std::min(Lt.cols-1, col_idx + 1); // handle last col
 
