@@ -287,7 +287,7 @@ nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
    [    b    ]
   */
   // this fuction optimizes cache accesses by slicing matrix vertically
-  const static block_size = 512;
+  const static int block_size = 512;
 
   // saves original values of Lt on slice boundaries (we don't want to store
   // full-size temporary metrix). this way we can merge addition and
@@ -299,37 +299,40 @@ nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
   Mat row_buffer (1, block_size, Lt.type());
   float *r_buf = row_buffer.ptr<float>();
 
-  int col_idx = 0;
-  for (int i = 0; i < (Lt.cols-1)/block_size; ++i, col_idx += block_size) {
+  for (int col_idx = 0; col_idx < Lt.cols; col_idx += block_size) {
+    // handle edge conditions
+    int remaining = Lt.cols - col_idx;
+    int prev_col_idx = std::max(0, col_idx - 1); // handle first col
+    int next_col_idx = std::min(Lt.cols-1, col_idx + 1); // handle last col
+
     // init row buffer for the first row
-    float *lt_first = Lt.ptr<float>(0, col_idx);
-    std::memcpy(r_buf, lt_first, block_size * sizeof(float));
+    const float *lt_first = Lt.ptr<float>(0, col_idx);
+    std::memcpy(r_buf, lt_first, remaining * sizeof(float));
 
     for (int j = 0; j < Lt.rows; ++j) {
       // handle edge conditions
-      int prev_col_idx = std::max(0, col_idx-1); // handle first col
       int prev_row_idx = std::max(0, j-1); // handle first row
-      int next_row_idx = std::min(j + 1, Lt.rows - 1); // handle last row
+      int next_row_idx = std::min(Lt.rows-1, j+1); // handle last row
       // fetch kernel sources from lt, from matrices and buffers
       float *lt_row = Lt.ptr<float>(j, col_idx);
-      float *lt_row_next = Lt.ptr<float>(next_row_idx, col_idx);
+      const float *lt_row_next = Lt.ptr<float>(next_row_idx, col_idx);
       float lt_cp = c_buf[j];
       float lt_c = lt_row[0];
-      float lt_cn = lt_row[1];
+      float lt_cn = Lt.at<float>(j, next_col_idx);;
       float lt_a = r_buf[0];
       float lt_b = lt_row_next[0];
       // same for lf
-      float *lf_row = Lflow.ptr<float>(j, col_idx);
-      float *lf_row_next = Lflow.ptr<float>(next_row_idx, col_idx);
-      float *lf_row_prev = Lflow.ptr<float>(prev_row_idx, col_idx);
-      float lf_cp = Lflow.ptr<float>(j, prev_col_idx);
+      const float *lf_row = Lflow.ptr<float>(j, col_idx);
+      const float *lf_row_next = Lflow.ptr<float>(next_row_idx, col_idx);
+      const float *lf_row_prev = Lflow.ptr<float>(prev_row_idx, col_idx);
+      float lf_cp = Lflow.at<float>(j, prev_col_idx);
       float lf_c = lf_row[0];
-      float lf_cn = lf_row[1];
+      float lf_cn = Lflow.at<float>(j, next_col_idx);
       float lf_a = lf_row_prev[0];
       float lf_b = lf_row_next[0];
 
       // hot loop
-      for (int k = 0; k < block_size;) {
+      for (int k = 0; k < remaining;) {
         float step = nld_kernel(lt_a, lt_b, lt_cp, lt_c, lt_cn,
           lf_a, lf_b, lf_cp, lf_c, lf_cn) * step_size;
         lt_row[k] += step; // add step to lt
@@ -338,51 +341,22 @@ nld_step_scalar_add(const Mat& Lflow, Mat& Lt, float step_size)
 
         // move kernel sources
         ++k;
+        int k_next = std::min(k+1, remaining-1); // handle last col
         // lt
         lt_cp = lt_c;
         lt_c = lt_cn;
-        lt_cn = lt_row[k+1];
+        lt_cn = lt_row[k_next];
         lt_a = r_buf[k];
         lt_b = lt_row_next[k];
         // lf
+        lf_cp = lf_c;
+        lf_c = lf_cn;
+        lf_cn = lf_row[k_next];
+        lf_a = lf_row_prev[k];
+        lf_b = lf_row_next[k];
       }
       // save original value to col buffer
       c_buf[j] = lt_cp;
-    }
-  }
-  // handle last block specially - esp. last column.
-  col_idx -= block_size;
-  int remaining = Lt.cols - col_idx;
-  if (remaining > 0) {
-    // init row buffer for the first row
-    float *lt_first = Lt.ptr<float>(0, col_idx);
-    std::memcpy(r_buf, lt_first, remaining * sizeof(float));
-
-    for (int j = 0; j < Lt.rows; ++j) {
-      float *lt_row = Lt.ptr<float>(j, col_idx);
-      int last_row_idx = std::min(j + 1, Lt.rows - 1); // handle last row
-      float *lt_row_next = Lt.ptr<float>(last_row_idx, col_idx);
-      // fetch kernel sources, from matrices and buffers
-      float lt_cp = c_buf[j];
-      float lt_c = lt_row[0];
-      float lt_cn = lt_row[std::min(1, remaining)];
-      float lt_a = r_buf[0];
-      float lt_b = lt_row_next[0];
-      for (int k = 0; k < remaining;) {
-        float step = nld_kernel(lt_a, lt_b, lt_cp, lt_c, lt_cn,
-        lf_a, lf_b, lf_cp, lf_c, lf_cn) * step_size;
-        lt_row[k] += step; // add step to lt
-        // save original value without step (for next row)
-        r_buf[k] = lt_c;
-
-        // move kernel sources
-        ++k;
-        lt_cp = lt_c;
-        lt_c = lt_cn;
-        lt_cn = lt_row[std::min(k+1, remaining)];
-        lt_a = r_buf[k];
-        lt_b = lt_row_next[k];
-      }
     }
   }
 }
