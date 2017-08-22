@@ -222,7 +222,7 @@ nld_step_scalar_row(const Mat& Lflow, Mat& Lt, float *lt_row_prev, float *buf, i
 
     // reconstruct previous value, first elem has been already overwriten in memory
     __m256 new_lt_c = _mm256_loadu_ps(lt_row + k);
-    __m256 lt_cp = (__m256)_mm256_alignr_ex_epi8((__m256i)new_lt_c, (__m256i)lt_c, 3 * sizeof(float));
+    __m256 lt_cp = (__m256)_mm256_alignr_ex_epi8((__m256i)new_lt_c, (__m256i)lt_c, 7 * sizeof(float));
     lt_c = new_lt_c;
 
     __m256 lt_cn = _mm256_loadu_ps(lt_row + (k + 1));
