@@ -212,8 +212,8 @@ nld_step_scalar_row(const Mat& Lflow, Mat& Lt, float *lt_row_prev, float *buf, i
 
   __m256 lt_c = _mm256_set1_ps(buf[0]);
   __m256 v_step_size = _mm256_set1_ps(step_size);
-  int vec_total = Lt.cols - 1 - 4; // max elems we can proceed vectorized without last column
-  for (; k <= vec_total; k += 4) {
+  int vec_total = Lt.cols - 1 - 8; // max elems we can proceed vectorized without last column
+  for (; k <= vec_total; k += 8) {
     __m256 lf_c = _mm256_loadu_ps(lf_row + k);
     __m256 lf_cp = _mm256_loadu_ps(lf_row + (k - 1));
     __m256 lf_cn = _mm256_loadu_ps(lf_row + (k + 1));
