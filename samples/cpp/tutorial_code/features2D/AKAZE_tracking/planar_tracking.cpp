@@ -204,7 +204,7 @@ int main(int argc, char **argv)
         drawStatistics(akaze_res, akaze_draw_stats);
         drawStatistics(orb_res, orb_draw_stats);
         vconcat(akaze_res, orb_res, res_frame);
-        video_out << akaze_res;
+        video_out << orb_res;
         // cv::imshow(video_name, res_frame);
         if(waitKey(1)==27) break; //quit on ESC button
     }
