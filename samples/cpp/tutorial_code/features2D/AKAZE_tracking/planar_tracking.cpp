@@ -175,7 +175,7 @@ int main(int argc, char **argv)
     output_size.width *= 2;
     VideoWriter video_out ("out.mkv", VideoWriter::fourcc('H','2','6','4'), video_in.get(CAP_PROP_FPS), output_size);
 
-    akaze_tracker.setFirstFrame(frame, bb, "AKAZE after", stats);
+    akaze_tracker.setFirstFrame(frame, bb, "AKAZE before", stats);
     orb_tracker.setFirstFrame(frame, bb, "ORB", stats);
 
     Stats akaze_draw_stats, orb_draw_stats;
