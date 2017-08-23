@@ -170,7 +170,12 @@ int main(int argc, char **argv)
     bb.push_back(cv::Point2f(static_cast<float>(uBox.x+uBox.width), static_cast<float>(uBox.y+uBox.height)));
     bb.push_back(cv::Point2f(static_cast<float>(uBox.x), static_cast<float>(uBox.y+uBox.height)));
 
-    akaze_tracker.setFirstFrame(frame, bb, "AKAZE", stats);
+    // set output
+    Size output_size = frame.size();
+    output_size.width *= 2;
+    VideoWriter video_out ("out.mkv", VideoWriter::fourcc('H','2','6','4'), video_in.get(CAP_PROP_FPS), output_size);
+
+    akaze_tracker.setFirstFrame(frame, bb, "AKAZE after", stats);
     orb_tracker.setFirstFrame(frame, bb, "ORB", stats);
 
     Stats akaze_draw_stats, orb_draw_stats;
@@ -199,6 +204,7 @@ int main(int argc, char **argv)
         drawStatistics(akaze_res, akaze_draw_stats);
         drawStatistics(orb_res, orb_draw_stats);
         vconcat(akaze_res, orb_res, res_frame);
+        video_out << akaze_res;
         cv::imshow(video_name, res_frame);
         if(waitKey(1)==27) break; //quit on ESC button
     }
