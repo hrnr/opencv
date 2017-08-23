@@ -35,7 +35,7 @@ void drawStatistics(Mat image, const Stats& stats)
     putText(image, str1.str(), Point(0, image.rows - 120), font, 2, Scalar::all(255), 3);
     putText(image, str2.str(), Point(0, image.rows - 90), font, 2, Scalar::all(255), 3);
     putText(image, str3.str(), Point(0, image.rows - 60), font, 2, Scalar::all(255), 3);
-    putText(image, str4.str(), Point(0, image.rows - 30), font, 2, Scalar::all(255), 3);
+    putText(image, str4.str(), Point(0, image.rows - 30), font, 2, Scalar(0, 255, 0), 3);
 }
 
 void printStatistics(string name, Stats stats)
